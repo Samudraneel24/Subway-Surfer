@@ -1,5 +1,82 @@
 var cubeRotation = 0.0;
 var temp = [1, 2.5, -5];
+var vsSource = `
+    attribute vec4 aVertexPosition;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uModelViewMatrix;
+    uniform mat4 uProjectionMatrix;
+
+    varying highp vec2 vTextureCoord;
+
+    void main(void) {
+      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+      vTextureCoord = aTextureCoord;
+    }
+  `;
+
+var fsSource_bw = `
+    varying highp vec2 vTextureCoord;
+
+    uniform sampler2D uSampler;
+
+    void main(void) {
+      precision mediump float;
+      vec4 color = texture2D(uSampler, vTextureCoord);
+      float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+      gl_FragColor = vec4(vec3(gray), 1.0);
+    }
+  `;
+var fsSource_color = `
+    varying highp vec2 vTextureCoord;
+
+    uniform sampler2D uSampler;
+
+    void main(void) {
+      gl_FragColor = texture2D(uSampler, vTextureCoord);
+    }
+  `;
+var fsSource = fsSource_color;
+var shaderProgram;
+var canvas;
+var gl;
+var programInfo;
+var grayscale = 0;
+var color_R, color_G, color_B;
+var color_op = 1.0;
+
+function shader_update(){
+  if(grayscale == 0){
+    fsSource = fsSource_color;
+    color_R = 0.45;
+    color_G = 0.76;
+    color_B = 0.98;
+  }
+  else{
+    fsSource = fsSource_bw;
+    color_R = 0.65;
+    color_G = 0.65;
+    color_B = 0.65;
+  }
+  shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+  programInfo = {
+    program: shaderProgram,
+    attribLocations: {
+      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+      textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
+    },
+    uniformLocations: {
+      projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+      modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+      uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
+    },
+  };
+}
+
+Mousetrap.bind('g', function() { 
+    grayscale = 1 - grayscale;
+    shader_update();
+ });
 Mousetrap.bind('right', function() { temp[0] = -1; });
 Mousetrap.bind('left', function() { temp[0] = 1; });
 
@@ -12,8 +89,8 @@ main();
 function main() {
 
 
-  const canvas = document.querySelector('#glcanvas');
-  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  canvas = document.querySelector('#glcanvas');
+  gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
   // c1 = new Track(gl, [-1, 0, 0]);
   // c2 = new Track(gl, [1, 0, 0]);
@@ -31,99 +108,15 @@ function main() {
     return;
   }
 
-  // Vertex shader program
-
-  // const vsSource = `
-  //   attribute vec4 aVertexPosition;
-  //   attribute vec4 aVertexColor;
-
-  //   uniform mat4 uModelViewMatrix;
-  //   uniform mat4 uProjectionMatrix;
-
-  //   varying lowp vec4 vColor;
-
-  //   void main(void) {
-  //     gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-  //     vColor = aVertexColor;
-  //   }
-  // `;
-  const vsSource = `
-    attribute vec4 aVertexPosition;
-    attribute vec2 aTextureCoord;
-
-    uniform mat4 uModelViewMatrix;
-    uniform mat4 uProjectionMatrix;
-
-    varying highp vec2 vTextureCoord;
-
-    void main(void) {
-      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-      vTextureCoord = aTextureCoord;
-    }
-  `;
-
-  // Fragment shader program
-
-  // const fsSource = `
-  //   varying lowp vec4 vColor;
-
-  //   void main(void) {
-  //     gl_FragColor = vColor;
-  //   }
-  // `;
-  const fsSource = `
-    varying highp vec2 vTextureCoord;
-
-    uniform sampler2D uSampler;
-
-    void main(void) {
-      gl_FragColor = texture2D(uSampler, vTextureCoord);
-    }
-  `;
-
   // Load texture
   texture = [];
   texture[0] = loadTexture(gl, 'track3.jpg');
   texture[1] = loadTexture(gl, 'brick.jpeg');
   texture[2] = loadTexture(gl, 'train2.png');
-  texture[3] = loadTexture(gl, 'hehehe.jpg');
-  texture[4] = loadTexture(gl, "obstacle2.jpg");
+  texture[3] = loadTexture(gl, 'gold_texture.jpg');
+  texture[4] = loadTexture(gl, "obstacle3.jpg");
 
-  // Initialize a shader program; this is where all the lighting
-  // for the vertices and so forth is established.
-  const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
-
-  // Collect all the info needed to use the shader program.
-  // Look up which attributes our shader program is using
-  // for aVertexPosition, aVevrtexColor and also
-  // look up uniform locations.
-  // const programInfo = {
-  //   program: shaderProgram,
-  //   attribLocations: {
-  //     vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-  //     vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor'),
-  //   },
-  //   uniformLocations: {
-  //     projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-  //     modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-  //   },
-  // };
-  const programInfo = {
-    program: shaderProgram,
-    attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-      textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
-    },
-    uniformLocations: {
-      projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-      modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-      uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
-    },
-  };
-
-  // Here's where we call the routine that builds all the
-  // objects we'll be drawing.
-  //const buffers
+  shader_update();
 
   for(i = 0; i < 5; i++){
     // floor
@@ -132,13 +125,7 @@ function main() {
     // wall
     wallarr[2*i] = new Wall(gl, [-3, 2, 10*i]);
     wallarr[2*i + 1] = new Wall(gl, [3, 2, 10*i]);
-    // console.log(wallarr[2*i]);
-
-    // coinarr[2*i] = new Coin(gl, [-1, 2, 10*i]);
-    // coinarr[2*i + 1] = new Coin(gl, [1, 2, 10*i]);
-    // console.log(coinarr[2*i]);
   }
-  // C = new Coin(gl, [1, 2, 10]);
 
   trainarrLeft[0] = new Train(gl, [-1, 2, 60]);
   trainarrRight[0] = new Train(gl, [1, 2, 100]);
@@ -150,6 +137,7 @@ function main() {
 
   // Draw the scene repeatedly
   function render(now) {
+    // shaderProgram = initShaderProgram(gl, vsSource, fsSource);
     counter++;
     now *= 0.001;  // convert to seconds
     const deltaTime = now - then;
@@ -179,9 +167,9 @@ function main() {
 
     if(counter % 200 == 0){
       if(Math.random() < 0.5)
-        obstaclearr.push(new Obstacle(gl, [1, 1.75, 60]));
+        obstaclearr.push(new Obstacle(gl, [1, 1.5, 60]));
       else
-        obstaclearr.push(new Obstacle(gl, [-1, 1.75, 60]));
+        obstaclearr.push(new Obstacle(gl, [-1, 1.5, 60]));
     }
 
     for(i = 0; i < obstaclearr.length; i++)
@@ -226,7 +214,8 @@ function main() {
 // Draw the scene.
 //
 function drawScene(gl, programInfo, deltaTime, texture) {
-  gl.clearColor(0.45, 0.76, 0.98, 1.0);  // Clear to black, fully opaque
+  // gl.clearColor((0.45, 0.76, 0.98, 1.0));  // Clear to black, fully opaque
+  gl.clearColor(color_R, color_G, color_B, color_op);
   gl.clearDepth(1.0);                 // Clear everything
   gl.enable(gl.DEPTH_TEST);           // Enable depth testing
   gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
@@ -298,10 +287,6 @@ function drawScene(gl, programInfo, deltaTime, texture) {
 
     trainarrLeft[0].drawTrain(gl, viewProjectionMatrix, programInfo, deltaTime, texture[2]);
     trainarrRight[0].drawTrain(gl, viewProjectionMatrix, programInfo, deltaTime, texture[2]);
-    // C.drawCoin(gl, viewProjectionMatrix, programInfo, deltaTime, texture[3]);
-
-  // c1.drawTrack(gl, viewProjectionMatrix, programInfo, deltaTime, texture);
-  // c2.drawTrack(gl, viewProjectionMatrix, programInfo, deltaTime, texture);
 
 }
 
