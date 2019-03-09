@@ -77,6 +77,7 @@ var color_op = 1.0;
 var Pl;
 var num_coin = 0;
 var tripped_count = 0;
+var bootcounter = 0;
 // var jumping_boots = 0;
 function detect_collision(a, b) {
     return (Math.abs(a.x - b.x) * 2 < (a.Width + b.Width)) &&
@@ -164,6 +165,7 @@ function main() {
   coinarrRight = []
   obstaclearr = []
   obstaclearrUp = []
+  boot_arr = []
   Pl = new Player(gl, [1, 1.5, 0]);
   // If we don't have a GL context, give up now
 
@@ -180,6 +182,7 @@ function main() {
   texture[3] = loadTexture(gl, 'gold_texture.jpg');
   texture[4] = loadTexture(gl, "obstacle3.jpg");
   texture[5] = loadTexture(gl, "skin.png");
+  texture[6] = loadTexture(gl, "boot2.jpg");
 
   shader_update();
 
@@ -202,6 +205,7 @@ function main() {
 
   // Draw the scene repeatedly
   function render(now) {
+    console.log(Pl.isBoot);
     if(counter % 20 == 0){
       wall_option = 1 - wall_option;
       shader_update();
@@ -210,6 +214,7 @@ function main() {
     // shaderProgram = initShaderProgram(gl, vsSource, fsSource);
     counter++;
     tripped_count++;
+    bootcounter++;
     now *= 0.001;  // convert to seconds
     const deltaTime = now - then;
     then = now;
@@ -225,8 +230,36 @@ function main() {
       Length : 0.7,
     }
 
+    if(counter % 200 == 0){
+      if(Math.random() < 0.5)
+        boot_arr.push(new Boot(gl, [1, 1.75, 50]));
+      else
+        boot_arr.push(new Boot(gl, [-1, 1.75, 50]));
+    }
+    if(boot_arr.length > 0){
+      boot_arr[0].pos[2] -= curSpeed;
+      bootBound = {
+        x : boot_arr[0].pos[0] - 0.5,
+        y : boot_arr[0].pos[1] - 0.25,
+        z : boot_arr[0].pos[2],
+        Width : 1,
+        Height : 0.5,
+        Length : 0.05,
+      }
+      if(detect_collision(bootBound, playerBound)){
+        boot_arr.shift();
+        Pl.isBoot = 1;
+        bootcounter = 0;
+      }
+      if(boot_arr.length > 0 && boot_arr[0].pos[2] < -10)
+        boot_arr.shift();
+    }
+
     if(tripped_count > 500)
       curSpeed = 0.1;
+
+    if(bootcounter > 1000)
+      Pl.isBoot = 0;
 
     for(i = 0; i < 10; i++){
       // floor
@@ -392,15 +425,34 @@ function main() {
        tripped_count = 0;
        curSpeed = 0.06;
        temp[0] = 1;
-        console.log("left");
     }
     if(detect_collision(trainBoundRightSide, playerBound)){
        tripped_count = 0;
        curSpeed = 0.06;
        temp[0] = -1;
-       console.log("right");
     }
-    // console.log(trainarrLeft.length);
+
+    trainBoundRightTop = {
+        x : trainarrRight[0].pos[0] - 0.9,
+        y : trainarrRight[0].pos[1] + 1.0,
+        z : trainarrRight[0].pos[2],
+        Width : 1.8,
+        Height : 0.05,
+        Length : 6.0,
+    }
+    trainBoundLeftTop = {
+        x : trainarrLeft[0].pos[0] - 0.9,
+        y : trainarrLeft[0].pos[1] + 1.0,
+        z : trainarrLeft[0].pos[2],
+        Width : 1.8,
+        Height : 0.05,
+        Length : 6.0,
+    }    
+    if(detect_collision(trainBoundRightTop, playerBound) || detect_collision(trainBoundLeftTop, playerBound)){
+       Pl.pos[1] = 3.5;
+       Pl.speedy = 0;
+    }
+
     drawScene(gl, wallInfo, programInfo, deltaTime, texture);
 
     requestAnimationFrame(render);
@@ -488,6 +540,9 @@ function drawScene(gl, wallInfo, programInfo, deltaTime, texture) {
 
     trainarrLeft[0].drawTrain(gl, viewProjectionMatrix, programInfo, deltaTime, texture[2]);
     trainarrRight[0].drawTrain(gl, viewProjectionMatrix, programInfo, deltaTime, texture[2]);
+
+    if(boot_arr.length > 0)
+      boot_arr[0].drawBoot(gl, viewProjectionMatrix, programInfo, deltaTime, texture[6]);
 
     Pl.drawPlayer(gl, viewProjectionMatrix, programInfo, deltaTime, texture[5]);
 
