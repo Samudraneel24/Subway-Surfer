@@ -1,41 +1,41 @@
 /// <reference path="webgl.d.ts" />
 
-let Obstacle = class {
-    constructor(gl, pos, scale) {
+let Jetpack = class {
+    constructor(gl, pos) {
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
 
         this.positions = [
              // Front face
-             -0.9*scale, -0.5*scale, 0.05,
-             0.9*scale, -0.5*scale, 0.05,
-             0.9*scale, 0.5*scale, 0.05,
-             -0.9*scale, 0.5*scale, 0.05,
+             -0.5, -0.6, 0.05,
+             0.5, -0.6, 0.05,
+             0.5, 0.6, 0.05,
+             -0.5, 0.6, 0.05,
              //Back Face
-             -0.9*scale, -0.5*scale, -0.05,
-             0.9*scale, -0.5*scale, -0.05,
-             0.9*scale, 0.5*scale, -0.05,
-             -0.9*scale, 0.5*scale, -0.05,
+             -0.5, -0.6, -0.05,
+             0.5, -0.6, -0.05,
+             0.5, 0.6, -0.05,
+             -0.5, 0.6, -0.05,
              //Top Face
-             -0.9*scale, 0.5*scale, -0.05,
-             0.9*scale, 0.5*scale, -0.05,
-             0.9*scale, 0.5*scale, 0.05,
-             -0.9*scale, 0.5*scale, 0.05,
+             -0.5, 0.6, -0.05,
+             0.5, 0.6, -0.05,
+             0.5, 0.6, 0.05,
+             -0.5, 0.6, 0.05,
              //Bottom Face
-             -0.9*scale, -0.5*scale, -0.05,
-             0.9*scale, -0.5*scale, -0.05,
-             0.9*scale, -0.5*scale, 0.05,
-             -0.9*scale, -0.5*scale, 0.05,
+             -0.5, -0.6, -0.05,
+             0.5, -0.6, -0.05,
+             0.5, -0.6, 0.05,
+             -0.5, -0.6, 0.05,
              //Left Face
-             -0.9*scale, -0.5*scale, -0.05,
-             -0.9*scale, 0.5*scale, -0.05,
-             -0.9*scale, 0.5*scale, 0.05,
-             -0.9*scale, -0.5*scale, 0.05,
+             -0.5, -0.6, -0.05,
+             -0.5, 0.6, -0.05,
+             -0.5, 0.6, 0.05,
+             -0.5, -0.6, 0.05,
              //Right Face
-             0.9*scale, -0.5*scale, -0.05,
-             0.9*scale, 0.5*scale, -0.05,
-             0.9*scale, 0.5*scale, 0.05,
-             0.9*scale, -0.5*scale, 0.05,
+             0.5, -0.6, -0.05,
+             0.5, 0.6, -0.05,
+             0.5, 0.6, 0.05,
+             0.5, -0.6, 0.05,
         ];
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.positions),
@@ -145,7 +145,7 @@ let Obstacle = class {
 
     }
 
-    drawObstacle(gl, projectionMatrix, programInfo, deltaTime, texture) {
+    drawJetpack(gl, projectionMatrix, programInfo, deltaTime, texture) {
         const modelViewMatrix = mat4.create();
         mat4.translate(
             modelViewMatrix,

@@ -78,7 +78,7 @@ var Pl;
 var num_coin = 0;
 var tripped_count = 0;
 var bootcounter = 0;
-// var jumping_boots = 0;
+var flycounter = 0;
 function detect_collision(a, b) {
     return (Math.abs(a.x - b.x) * 2 < (a.Width + b.Width)) &&
            (Math.abs(a.y - b.y) * 2 < (a.Height + b.Height)) &&
@@ -166,6 +166,7 @@ function main() {
   obstaclearr = []
   obstaclearrUp = []
   boot_arr = []
+  jet_arr = []
   Pl = new Player(gl, [1, 1.5, 0]);
   // If we don't have a GL context, give up now
 
@@ -183,6 +184,7 @@ function main() {
   texture[4] = loadTexture(gl, "obstacle3.jpg");
   texture[5] = loadTexture(gl, "skin.png");
   texture[6] = loadTexture(gl, "boot2.jpg");
+  texture[7] = loadTexture(gl, "Jetpack3.jpg");
 
   shader_update();
 
@@ -205,7 +207,7 @@ function main() {
 
   // Draw the scene repeatedly
   function render(now) {
-    console.log(Pl.isBoot);
+    console.log(counter, jet_arr.length);
     if(counter % 20 == 0){
       wall_option = 1 - wall_option;
       shader_update();
@@ -215,6 +217,7 @@ function main() {
     counter++;
     tripped_count++;
     bootcounter++;
+    flycounter++;
     now *= 0.001;  // convert to seconds
     const deltaTime = now - then;
     then = now;
@@ -230,12 +233,20 @@ function main() {
       Length : 0.7,
     }
 
-    if(counter % 200 == 0){
+    if(counter % 1500 == 0){
       if(Math.random() < 0.5)
-        boot_arr.push(new Boot(gl, [1, 1.75, 50]));
+        boot_arr.push(new Boot(gl, [1, 1.75 + Math.random()*1.5, 50 + Math.random()*20]));
       else
-        boot_arr.push(new Boot(gl, [-1, 1.75, 50]));
+        boot_arr.push(new Boot(gl, [-1, 1.75 + Math.random()*1.5, 50 + Math.random()*20]));
     }
+
+    if(counter % 2200 == 0){
+      if(Math.random() < 0.5)
+        jet_arr.push(new Jetpack(gl, [1, 1.75 + Math.random()*1.5, 50 + Math.random()*20]));
+      else
+        jet_arr.push(new Jetpack(gl, [-1, 1.75 + Math.random()*1.5, 50 + Math.random()*20]));
+    }
+
     if(boot_arr.length > 0){
       boot_arr[0].pos[2] -= curSpeed;
       bootBound = {
@@ -255,11 +266,34 @@ function main() {
         boot_arr.shift();
     }
 
+    if(jet_arr.length > 0){
+      jet_arr[0].pos[2] -= curSpeed;
+      jetBound = {
+        x : jet_arr[0].pos[0] - 0.5,
+        y : jet_arr[0].pos[1] - 0.6,
+        z : jet_arr[0].pos[2],
+        Width : 1,
+        Height : 1.2,
+        Length : 0.05,
+      }
+      if(detect_collision(jetBound, playerBound)){
+        jet_arr.shift();
+        Pl.fly = 1;
+        Pl.pos[1] = 4;
+        flycounter = 0;
+      }
+      if(jet_arr.length > 0 && jet_arr[0].pos[2] < -10)
+        jet_arr.shift();
+    }
+
     if(tripped_count > 500)
       curSpeed = 0.1;
 
-    if(bootcounter > 1000)
+    if(bootcounter > 800)
       Pl.isBoot = 0;
+
+    if(flycounter > 800)
+      Pl.fly = 0;
 
     for(i = 0; i < 10; i++){
       // floor
@@ -278,20 +312,20 @@ function main() {
     // coin
     if(counter % 50 == 0){
       if(Math.random() < 0.25)
-        coinarrLeft.push(new Coin(gl, [1, 1.5, 100]));
+        coinarrLeft.push(new Coin(gl, [1, Pl.pos[1], 35]));
       if(Math.random() < 0.25)
-        coinarrRight.push(new Coin(gl, [-1, 1.5, 100]));
+        coinarrRight.push(new Coin(gl, [-1, Pl.pos[1], 35]));
     }
 
     if(counter % 200 == 0){
       if(Math.random() < 0.25)
-        obstaclearr.push(new Obstacle(gl, [1, 1.5, 60]));
+        obstaclearr.push(new Obstacle(gl, [1, 1.5, 60], 1));
       else if(Math.random() < 0.5)
-        obstaclearr.push(new Obstacle(gl, [-1, 1.5, 60]));
+        obstaclearr.push(new Obstacle(gl, [-1, 1.5, 60], 1));
       else if(Math.random() < 0.75)
-        obstaclearrUp.push(new Obstacle(gl, [1, 2.25, 60]));
+        obstaclearrUp.push(new Obstacle(gl, [1.5, 2.7, 60], 1.6));
       else
-        obstaclearrUp.push(new Obstacle(gl, [-1, 2.25, 60]));
+        obstaclearrUp.push(new Obstacle(gl, [-1.5, 2.7, 60], 1.6));
     }
 
     for(i = 0; i < obstaclearr.length; i++){
@@ -315,10 +349,10 @@ function main() {
       obstaclearrUp[i].pos[2] -= curSpeed;
       obstacleBound = {
         x : obstaclearrUp[i].pos[0] - 0.9,
-        y : obstaclearrUp[i].pos[1] - 0.5,
+        y : obstaclearrUp[i].pos[1] - 0.5*1.6,
         z : obstaclearrUp[i].pos[2],
         Width : 1.8,
-        Height : 1,
+        Height : 1.6,
         Length : 0.05,
       }
       if(detect_collision(obstacleBound, playerBound)){
@@ -449,8 +483,9 @@ function main() {
         Length : 6.0,
     }    
     if(detect_collision(trainBoundRightTop, playerBound) || detect_collision(trainBoundLeftTop, playerBound)){
+      if(Pl.fly == 0 && Pl.pos[1] < 3.5)
        Pl.pos[1] = 3.5;
-       Pl.speedy = 0;
+      Pl.speedy = 0;
     }
 
     drawScene(gl, wallInfo, programInfo, deltaTime, texture);
@@ -543,6 +578,9 @@ function drawScene(gl, wallInfo, programInfo, deltaTime, texture) {
 
     if(boot_arr.length > 0)
       boot_arr[0].drawBoot(gl, viewProjectionMatrix, programInfo, deltaTime, texture[6]);
+
+    if(jet_arr.length > 0)
+      jet_arr[0].drawJetpack(gl, viewProjectionMatrix, programInfo, deltaTime, texture[7]);
 
     Pl.drawPlayer(gl, viewProjectionMatrix, programInfo, deltaTime, texture[5]);
 

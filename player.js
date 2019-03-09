@@ -9,6 +9,7 @@ let Player = class {
         this.g = -0.008;
         this.isJump = 0;
         this.isBoot = 0;
+        this.fly = 0;
 
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
@@ -120,23 +121,25 @@ let Player = class {
     }
 
     jump(){
-      if(this.isJump == 0){
+      if(this.fly == 0 && this.isJump == 0){
         this.isJump = 1;
         if(this.isBoot == 1)
-          this.speedy = 0.25;
+          this.speedy = 0.24;
         else
-          this.speedy = 0.15;
+          this.speedy = 0.17;
       }
     }
 
     tick(xcord){
       this.pos[0] = xcord;
-      this.pos[1] += this.speedy;
-      this.speedy += this.g;
-      if(this.pos[1] <= 1.5){
-        this.pos[1] = 1.5;
-        this.isJump = 0;
-        this.speedy = 0.0;
+      if(this.fly == 0){
+        this.pos[1] += this.speedy;
+        this.speedy += this.g;
+        if(this.pos[1] <= 1.5){
+          this.pos[1] = 1.5;
+          this.isJump = 0;
+          this.speedy = 0.0;
+        }
       }
     }
 
