@@ -1,47 +1,47 @@
 /// <reference path="webgl.d.ts" />
 
-let track = class {
-    constructor(gl, pos) {
+let Cube = class {
+    constructor(gl, pos, width, height, length, rot_z) {
+        this.rotation_z = (Math.PI*rot_z)/180.0;
+        this.rot_x = 0;
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
 
         this.positions = [
              // Front face
-             -1.0, -1.0, 5.0,
-             1.0, -1.0, 5.0,
-             1.0, 1.0, 5.0,
-             -1.0, 1.0, 5.0,
+             -width, -height, length,
+             width, -height, length,
+             width, height, length,
+             -width, height, length,
              //Back Face
-             -1.0, -1.0, -5.0,
-             1.0, -1.0, -5.0,
-             1.0, 1.0, -5.0,
-             -1.0, 1.0, -5.0,
+             -width, -height, -length,
+             width, -height, -length,
+             width, height, -length,
+             -width, height, -length,
              //Top Face
-             -1.0, 1.0, -5.0,
-             1.0, 1.0, -5.0,
-             1.0, 1.0, 5.0,
-             -1.0, 1.0, 5.0,
+             -width, height, -length,
+             width, height, -length,
+             width, height, length,
+             -width, height, length,
              //Bottom Face
-             -1.0, -1.0, -5.0,
-             1.0, -1.0, -5.0,
-             1.0, -1.0, 5.0,
-             -1.0, -1.0, 5.0,
+             -width, -height, -length,
+             width, -height, -length,
+             width, -height, length,
+             -width, -height, length,
              //Left Face
-             -1.0, -1.0, -5.0,
-             -1.0, 1.0, -5.0,
-             -1.0, 1.0, 5.0,
-             -1.0, -1.0, 5.0,
+             -width, -height, -length,
+             -width, height, -length,
+             -width, height, length,
+             -width, -height, length,
              //Right Face
-             1.0, -1.0, -5.0,
-             1.0, 1.0, -5.0,
-             1.0, 1.0, 5.0,
-             1.0, -1.0, 5.0,
+             width, -height, -length,
+             width, height, -length,
+             width, height, length,
+             width, -height, length,
         ];
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.positions),
                         gl.STATIC_DRAW);
-
-        this.rotation = 0;
 
         this.pos = pos;
 
@@ -145,7 +145,7 @@ let track = class {
 
     }
 
-    drawtrack(gl, projectionMatrix, programInfo, deltaTime, texture) {
+    drawCube(gl, projectionMatrix, programInfo, deltaTime, texture) {
         const modelViewMatrix = mat4.create();
         mat4.translate(
             modelViewMatrix,
@@ -157,8 +157,13 @@ let track = class {
 
         mat4.rotate(modelViewMatrix,
             modelViewMatrix,
-            this.rotation,
-            [1, 1, 1]);
+            (Math.PI*this.rot_x)/180,
+            [1, 0, 0]);
+
+        mat4.rotate(modelViewMatrix,
+            modelViewMatrix,
+            this.rotation_z,
+            [0, 0, 1]);
 
         {
             const numComponents = 3;

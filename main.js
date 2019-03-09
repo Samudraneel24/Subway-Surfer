@@ -1,5 +1,5 @@
 var cubeRotation = 0.0;
-var temp = [1, 3.5, -6.5];
+var temp = [1, 4, -9];
 var vsSource = `
     attribute vec4 aVertexPosition;
     attribute vec2 aTextureCoord;
@@ -76,7 +76,7 @@ var color_R, color_G, color_B;
 var color_op = 1.0;
 var Pl;
 var num_coin = 0;
-var tripped_count = 0;
+var tripped_count = 550;
 var bootcounter = 0;
 var flycounter = 0;
 function detect_collision(a, b) {
@@ -141,7 +141,7 @@ Mousetrap.bind('g', function() {
  });
 Mousetrap.bind('right', function() { temp[0] = -1; });
 Mousetrap.bind('left', function() { temp[0] = 1; });
-Mousetrap.bind('up', function(){Pl.jump()});
+Mousetrap.bind('up', function(){Pl.jump(), Pol.jump()});
 
 main();
 
@@ -168,6 +168,7 @@ function main() {
   boot_arr = []
   jet_arr = []
   Pl = new Player(gl, [1, 1.5, 0]);
+  Pol = new Police(gl, [1, 1.5, -3]);
   // If we don't have a GL context, give up now
 
   if (!gl) {
@@ -207,11 +208,17 @@ function main() {
 
   // Draw the scene repeatedly
   function render(now) {
-    console.log(counter, jet_arr.length);
+    // console.log(counter, jet_arr.length);
     if(counter % 20 == 0){
       wall_option = 1 - wall_option;
       shader_update();
     }
+    if(counter % 10 == 0){
+      Pl.rot_x = -Pl.rot_x;
+      Pol.rot_x = -Pol.rot_x;
+    }
+
+    Pol.pos[1] = Pl.pos[1];
     // console.log(num_coin);
     // shaderProgram = initShaderProgram(gl, vsSource, fsSource);
     counter++;
@@ -223,6 +230,7 @@ function main() {
     then = now;
 
     Pl.tick(temp[0]);
+    Pol.tick(temp[0]);
 
     playerBound = {
       x : Pl.pos[0] - 0.35,
@@ -231,6 +239,17 @@ function main() {
       Width : 0.7,
       Height : 1.0,
       Length : 0.7,
+    }
+
+    if(tripped_count < 500){
+      if(Pol.pos[2] < -3){
+        speedz = 1.2 - curSpeed;
+        Pol.pos[2] += speedz;
+      }
+    }
+    else{
+      if(Pol.pos[2] > -10)
+        Pol.pos[2] -= 0.02;
     }
 
     if(counter % 1500 == 0){
@@ -262,7 +281,7 @@ function main() {
         Pl.isBoot = 1;
         bootcounter = 0;
       }
-      if(boot_arr.length > 0 && boot_arr[0].pos[2] < -10)
+      if(boot_arr.length > 0 && boot_arr[0].pos[2] < -15)
         boot_arr.shift();
     }
 
@@ -282,7 +301,7 @@ function main() {
         Pl.pos[1] = 4;
         flycounter = 0;
       }
-      if(jet_arr.length > 0 && jet_arr[0].pos[2] < -10)
+      if(jet_arr.length > 0 && jet_arr[0].pos[2] < -15)
         jet_arr.shift();
     }
 
@@ -298,13 +317,13 @@ function main() {
     for(i = 0; i < 10; i++){
       // floor
       floorarr[i].pos[2] -= curSpeed;
-      if(floorarr[i].pos[2] < -10){
+      if(floorarr[i].pos[2] < -15){
         floorarr[i].pos[2] += 50
       }
 
       // wall
       wallarr[i].pos[2] -= curSpeed;
-      if(wallarr[i].pos[2] < -10){
+      if(wallarr[i].pos[2] < -15){
         wallarr[i].pos[2] += 50
       }
     }
@@ -339,8 +358,13 @@ function main() {
         Length : 0.05,
       }
       if(detect_collision(obstacleBound, playerBound)){
-          tripped_count = 0;
-          curSpeed = 0.06;
+        if(tripped_count < 500){
+          alert("GameOver!! Start Again ?");
+          location.reload(); 
+          return;
+        }
+        tripped_count = 0;
+        curSpeed = 0.06;
       }
 
     }
@@ -363,7 +387,7 @@ function main() {
 
     }
 
-    if(obstaclearr.length > 0 && obstaclearr[0].pos[2] < -10)
+    if(obstaclearr.length > 0 && obstaclearr[0].pos[2] < -15)
       obstaclearr.shift();
 
     for(i = 0; i < coinarrLeft.length; i++){
@@ -398,10 +422,10 @@ function main() {
           i--;
       }
     }
-    if(coinarrLeft.length > 0 && coinarrLeft[0].pos[2] < -10)
+    if(coinarrLeft.length > 0 && coinarrLeft[0].pos[2] < -15)
       coinarrLeft.shift();
 
-    if(coinarrRight.length > 0 && coinarrRight[0].pos[2] < -10)
+    if(coinarrRight.length > 0 && coinarrRight[0].pos[2] < -15)
       coinarrRight.shift();
 
     // train
@@ -429,12 +453,12 @@ function main() {
       return;
     }
 
-    if(trainarrLeft[0].pos[2] < -10){
+    if(trainarrLeft[0].pos[2] < -15){
       let z = 50 + Math.floor((Math.random() * 50) + 1);
       trainarrLeft[0].pos[2] = z;
     }
 
-    if(trainarrRight[0].pos[2] < -10){
+    if(trainarrRight[0].pos[2] < -15){
       let z = 50 + Math.floor((Math.random() * 50) + 1);
       trainarrRight[0].pos[2] = z;
     }
@@ -456,11 +480,21 @@ function main() {
         Length : 2.5,
     }
     if(detect_collision(trainBoundLeftSide, playerBound)){
+      if(tripped_count < 500){
+          alert("GameOver!! Start Again ?");
+          location.reload(); 
+          return;
+        }
        tripped_count = 0;
        curSpeed = 0.06;
        temp[0] = 1;
     }
     if(detect_collision(trainBoundRightSide, playerBound)){
+      if(tripped_count < 500){
+          alert("GameOver!! Start Again ?");
+          location.reload(); 
+          return;
+        }
        tripped_count = 0;
        curSpeed = 0.06;
        temp[0] = -1;
@@ -582,7 +616,8 @@ function drawScene(gl, wallInfo, programInfo, deltaTime, texture) {
     if(jet_arr.length > 0)
       jet_arr[0].drawJetpack(gl, viewProjectionMatrix, programInfo, deltaTime, texture[7]);
 
-    Pl.drawPlayer(gl, viewProjectionMatrix, programInfo, deltaTime, texture[5]);
+    Pl.drawPlayer(gl, viewProjectionMatrix, programInfo, deltaTime);
+    Pol.drawPolice(gl, viewProjectionMatrix, programInfo, deltaTime);
 
 }
 
