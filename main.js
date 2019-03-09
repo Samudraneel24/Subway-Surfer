@@ -1,5 +1,5 @@
 var cubeRotation = 0.0;
-var temp = [1, 2.5, -5];
+var temp = [1, 3.5, -6.5];
 var vsSource = `
     attribute vec4 aVertexPosition;
     attribute vec2 aTextureCoord;
@@ -14,6 +14,7 @@ var vsSource = `
       vTextureCoord = aTextureCoord;
     }
   `;
+var vsSource_wall = vsSource;
 
 var fsSource_bw = `
     varying highp vec2 vTextureCoord;
@@ -36,14 +37,52 @@ var fsSource_color = `
       gl_FragColor = texture2D(uSampler, vTextureCoord);
     }
   `;
+var fsSource_dark = `
+    varying highp vec2 vTextureCoord;
+
+    uniform sampler2D uSampler;
+    highp vec3 vLighting;
+
+    void main(void) {
+      precision mediump float;
+      vec4 color = texture2D(uSampler, vTextureCoord);
+      vLighting = color.rgb*vec3(0.5, 0.5, 0.5);
+      gl_FragColor = vec4(vLighting, 1.0);
+    }
+  `;
+var fsSource_bw_dark = `
+    varying highp vec2 vTextureCoord;
+
+    uniform sampler2D uSampler;
+
+    void main(void) {
+      precision mediump float;
+      vec4 color = texture2D(uSampler, vTextureCoord);
+      float gray = dot(color.rgb*vec3(0.5, 0.5, 0.5), vec3(0.299, 0.587, 0.114));
+      gl_FragColor = vec4(vec3(gray), 1.0);
+    }
+  `;
 var fsSource = fsSource_color;
+var fsSource_wall = fsSource_color;
 var shaderProgram;
+var shaderWall;
 var canvas;
 var gl;
 var programInfo;
+var wallInfo;
+var wall_option = 0;
 var grayscale = 0;
 var color_R, color_G, color_B;
 var color_op = 1.0;
+var Pl;
+var num_coin = 0;
+var tripped_count = 0;
+// var jumping_boots = 0;
+function detect_collision(a, b) {
+    return (Math.abs(a.x - b.x) * 2 < (a.Width + b.Width)) &&
+           (Math.abs(a.y - b.y) * 2 < (a.Height + b.Height)) &&
+           (Math.abs(a.z - b.z) * 2 < (a.Length + b.Length));
+}
 
 function shader_update(){
   if(grayscale == 0){
@@ -71,6 +110,28 @@ function shader_update(){
       uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
     },
   };
+
+  if(wall_option == 0 && grayscale == 0)
+    fsSource_wall = fsSource_color;
+  else if(wall_option == 0 && grayscale == 1)
+    fsSource_wall = fsSource_bw;
+  else if(wall_option == 1 && grayscale == 0)
+    fsSource_wall = fsSource_dark;
+  else
+    fsSource_wall = fsSource_bw_dark;
+  shaderWall = initShaderProgram(gl, vsSource_wall, fsSource_wall);
+  wallInfo = {
+    program: shaderWall,
+    attribLocations: {
+      vertexPosition: gl.getAttribLocation(shaderWall, 'aVertexPosition'),
+      textureCoord: gl.getAttribLocation(shaderWall, 'aTextureCoord'),
+    },
+    uniformLocations: {
+      projectionMatrix: gl.getUniformLocation(shaderWall, 'uProjectionMatrix'),
+      modelViewMatrix: gl.getUniformLocation(shaderWall, 'uModelViewMatrix'),
+      uSampler: gl.getUniformLocation(shaderWall, 'uSampler'),
+    },
+  };
 }
 
 Mousetrap.bind('g', function() { 
@@ -79,6 +140,7 @@ Mousetrap.bind('g', function() {
  });
 Mousetrap.bind('right', function() { temp[0] = -1; });
 Mousetrap.bind('left', function() { temp[0] = 1; });
+Mousetrap.bind('up', function(){Pl.jump()});
 
 main();
 
@@ -101,6 +163,8 @@ function main() {
   coinarrLeft = []
   coinarrRight = []
   obstaclearr = []
+  obstaclearrUp = []
+  Pl = new Player(gl, [1, 1.5, 0]);
   // If we don't have a GL context, give up now
 
   if (!gl) {
@@ -115,6 +179,7 @@ function main() {
   texture[2] = loadTexture(gl, 'train2.png');
   texture[3] = loadTexture(gl, 'gold_texture.jpg');
   texture[4] = loadTexture(gl, "obstacle3.jpg");
+  texture[5] = loadTexture(gl, "skin.png");
 
   shader_update();
 
@@ -137,11 +202,31 @@ function main() {
 
   // Draw the scene repeatedly
   function render(now) {
+    if(counter % 20 == 0){
+      wall_option = 1 - wall_option;
+      shader_update();
+    }
+    // console.log(num_coin);
     // shaderProgram = initShaderProgram(gl, vsSource, fsSource);
     counter++;
+    tripped_count++;
     now *= 0.001;  // convert to seconds
     const deltaTime = now - then;
     then = now;
+
+    Pl.tick(temp[0]);
+
+    playerBound = {
+      x : Pl.pos[0] - 0.35,
+      y : Pl.pos[1] - 0.5,
+      z : Pl.pos[2] - 0.35,
+      Width : 0.7,
+      Height : 1.0,
+      Length : 0.7,
+    }
+
+    if(tripped_count > 500)
+      curSpeed = 0.1;
 
     for(i = 0; i < 10; i++){
       // floor
@@ -166,23 +251,85 @@ function main() {
     }
 
     if(counter % 200 == 0){
-      if(Math.random() < 0.5)
+      if(Math.random() < 0.25)
         obstaclearr.push(new Obstacle(gl, [1, 1.5, 60]));
-      else
+      else if(Math.random() < 0.5)
         obstaclearr.push(new Obstacle(gl, [-1, 1.5, 60]));
+      else if(Math.random() < 0.75)
+        obstaclearrUp.push(new Obstacle(gl, [1, 2.25, 60]));
+      else
+        obstaclearrUp.push(new Obstacle(gl, [-1, 2.25, 60]));
     }
 
-    for(i = 0; i < obstaclearr.length; i++)
+    for(i = 0; i < obstaclearr.length; i++){
       obstaclearr[i].pos[2] -= curSpeed;
+      obstacleBound = {
+        x : obstaclearr[i].pos[0] - 0.9,
+        y : obstaclearr[i].pos[1] - 0.5,
+        z : obstaclearr[i].pos[2],
+        Width : 1.8,
+        Height : 1,
+        Length : 0.05,
+      }
+      if(detect_collision(obstacleBound, playerBound)){
+          tripped_count = 0;
+          curSpeed = 0.06;
+      }
+
+    }
+
+    for(i = 0; i < obstaclearrUp.length; i++){
+      obstaclearrUp[i].pos[2] -= curSpeed;
+      obstacleBound = {
+        x : obstaclearrUp[i].pos[0] - 0.9,
+        y : obstaclearrUp[i].pos[1] - 0.5,
+        z : obstaclearrUp[i].pos[2],
+        Width : 1.8,
+        Height : 1,
+        Length : 0.05,
+      }
+      if(detect_collision(obstacleBound, playerBound)){
+          alert("GameOver!! Start Again ?");
+          location.reload(); 
+          return;
+      }
+
+    }
 
     if(obstaclearr.length > 0 && obstaclearr[0].pos[2] < -10)
       obstaclearr.shift();
 
     for(i = 0; i < coinarrLeft.length; i++){
       coinarrLeft[i].pos[2] -= curSpeed;
+      coinBound = {
+        x : coinarrLeft[i].pos[0] - 0.3,
+        y : coinarrLeft[i].pos[1] - 0.3,
+        z : coinarrLeft[i].pos[2],
+        Width : 0.6,
+        Height : 0.6,
+        Length : 0.05,
+      }
+      if(detect_collision(coinBound, playerBound)){
+          coinarrLeft.splice(i, 1);
+          num_coin++;
+          i--;
+      }
     }
     for(i = 0; i < coinarrRight.length; i++){
       coinarrRight[i].pos[2] -= curSpeed;
+      coinBound = {
+        x : coinarrRight[i].pos[0] - 0.3,
+        y : coinarrRight[i].pos[1] - 0.3,
+        z : coinarrRight[i].pos[2],
+        Width : 0.6,
+        Height : 0.6,
+        Length : 0.05,
+      }
+      if(detect_collision(coinBound, playerBound)){
+          coinarrRight.splice(i, 1);
+          num_coin++;
+          i--;
+      }
     }
     if(coinarrLeft.length > 0 && coinarrLeft[0].pos[2] < -10)
       coinarrLeft.shift();
@@ -193,17 +340,68 @@ function main() {
     // train
     trainarrLeft[0].pos[2] -= curSpeed + trainSpeed;
     trainarrRight[0].pos[2] -= curSpeed + trainSpeed;
-      if(trainarrLeft[0].pos[2] < -10){
-        let z = 50 + Math.floor((Math.random() * 50) + 1);
-        trainarrLeft[0].pos[2] = z;
-      }
+    trainBoundRightFront = {
+        x : trainarrRight[0].pos[0] - 0.9,
+        y : trainarrRight[0].pos[1] - 1.0,
+        z : trainarrRight[0].pos[2] - 3.0,
+        Width : 1.8,
+        Height : 2.0,
+        Length : 0.05,
+    }
+    trainBoundLeftFront = {
+        x : trainarrLeft[0].pos[0] - 0.9,
+        y : trainarrLeft[0].pos[1] - 1.0,
+        z : trainarrLeft[0].pos[2] - 3.0,
+        Width : 1.8,
+        Height : 2.0,
+        Length : 0.05,
+    }
+    if(detect_collision(trainBoundLeftFront, playerBound) || detect_collision(trainBoundRightFront, playerBound)){
+      alert("GameOver!! Start Again ?");
+      location.reload(); 
+      return;
+    }
 
-       if(trainarrRight[0].pos[2] < -10){
-        let z = 50 + Math.floor((Math.random() * 50) + 1);
-        trainarrRight[0].pos[2] = z;
-      }
+    if(trainarrLeft[0].pos[2] < -10){
+      let z = 50 + Math.floor((Math.random() * 50) + 1);
+      trainarrLeft[0].pos[2] = z;
+    }
+
+    if(trainarrRight[0].pos[2] < -10){
+      let z = 50 + Math.floor((Math.random() * 50) + 1);
+      trainarrRight[0].pos[2] = z;
+    }
+
+    trainBoundLeftSide = {
+        x : trainarrLeft[0].pos[0] - 0.9,
+        y : trainarrLeft[0].pos[1] - 1.0,
+        z : trainarrLeft[0].pos[2] - 0.5,
+        Width : 1.8,
+        Height : 2.0,
+        Length : 2.5,
+    }
+    trainBoundRightSide = {
+        x : trainarrRight[0].pos[0] - 0.9,
+        y : trainarrRight[0].pos[1] - 1.0,
+        z : trainarrRight[0].pos[2] - 0.5,
+        Width : 1.8,
+        Height : 2.0,
+        Length : 2.5,
+    }
+    if(detect_collision(trainBoundLeftSide, playerBound)){
+       tripped_count = 0;
+       curSpeed = 0.06;
+       temp[0] = 1;
+        console.log("left");
+    }
+    if(detect_collision(trainBoundRightSide, playerBound)){
+       tripped_count = 0;
+       curSpeed = 0.06;
+       temp[0] = -1;
+       console.log("right");
+    }
     // console.log(trainarrLeft.length);
-    drawScene(gl, programInfo, deltaTime, texture);
+    drawScene(gl, wallInfo, programInfo, deltaTime, texture);
 
     requestAnimationFrame(render);
   }
@@ -213,8 +411,7 @@ function main() {
 //
 // Draw the scene.
 //
-function drawScene(gl, programInfo, deltaTime, texture) {
-  // gl.clearColor((0.45, 0.76, 0.98, 1.0));  // Clear to black, fully opaque
+function drawScene(gl, wallInfo, programInfo, deltaTime, texture) {
   gl.clearColor(color_R, color_G, color_B, color_op);
   gl.clearDepth(1.0);                 // Clear everything
   gl.enable(gl.DEPTH_TEST);           // Enable depth testing
@@ -269,7 +466,7 @@ function drawScene(gl, programInfo, deltaTime, texture) {
 
     for(i = 0; i < 10; i++){
       floorarr[i].drawTrack(gl, viewProjectionMatrix, programInfo, deltaTime, texture[0]);
-      wallarr[i].drawWall(gl, viewProjectionMatrix, programInfo, deltaTime, texture[1]);
+      wallarr[i].drawWall(gl, viewProjectionMatrix, wallInfo, deltaTime, texture[1]);
       // coinarr[i].drawCoin(gl, viewProjectionMatrix, programInfo, deltaTime, texture[3]);
     }
 
@@ -285,8 +482,14 @@ function drawScene(gl, programInfo, deltaTime, texture) {
       obstaclearr[i].drawObstacle(gl, viewProjectionMatrix, programInfo, deltaTime, texture[4]);
     }
 
+    for(i = 0; i < obstaclearrUp.length; i++){
+      obstaclearrUp[i].drawObstacle(gl, viewProjectionMatrix, programInfo, deltaTime, texture[4]);
+    }
+
     trainarrLeft[0].drawTrain(gl, viewProjectionMatrix, programInfo, deltaTime, texture[2]);
     trainarrRight[0].drawTrain(gl, viewProjectionMatrix, programInfo, deltaTime, texture[2]);
+
+    Pl.drawPlayer(gl, viewProjectionMatrix, programInfo, deltaTime, texture[5]);
 
 }
 

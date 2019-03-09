@@ -145,7 +145,7 @@ let Wall = class {
 
     }
 
-    drawWall(gl, projectionMatrix, programInfo, deltaTime, texture) {
+    drawWall(gl, projectionMatrix, wallInfo, deltaTime, texture) {
         const modelViewMatrix = mat4.create();
         mat4.translate(
             modelViewMatrix,
@@ -168,14 +168,14 @@ let Wall = class {
             const offset = 0;
             gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.position);
             gl.vertexAttribPointer(
-                programInfo.attribLocations.vertexPosition,
+                wallInfo.attribLocations.vertexPosition,
                 numComponents,
                 type,
                 normalize,
                 stride,
                 offset);
             gl.enableVertexAttribArray(
-                programInfo.attribLocations.vertexPosition);
+                wallInfo.attribLocations.vertexPosition);
         }
 
         // Tell WebGL how to pull out the colors from the color buffer
@@ -188,14 +188,14 @@ let Wall = class {
             const offset = 0;
             gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.texture);
             gl.vertexAttribPointer(
-                programInfo.attribLocations.textureCoord,
+                wallInfo.attribLocations.textureCoord,
                 numComponents,
                 type,
                 normalize,
                 stride,
                 offset);
             gl.enableVertexAttribArray(
-                programInfo.attribLocations.textureCoord);
+                wallInfo.attribLocations.textureCoord);
             // Tell WebGL we want to affect texture unit 0
           gl.activeTexture(gl.TEXTURE0);
 
@@ -203,7 +203,7 @@ let Wall = class {
           gl.bindTexture(gl.TEXTURE_2D, texture);
 
           // Tell the shader we bound the texture to texture unit 0
-          gl.uniform1i(programInfo.uniformLocations.uSampler, 0 );
+          gl.uniform1i(wallInfo.uniformLocations.uSampler, 0 );
         }
 
         // Tell WebGL which indices to use to index the vertices
@@ -211,16 +211,16 @@ let Wall = class {
 
         // Tell WebGL to use our program when drawing
 
-        gl.useProgram(programInfo.program);
+        gl.useProgram(wallInfo.program);
 
         // Set the shader uniforms
 
         gl.uniformMatrix4fv(
-            programInfo.uniformLocations.projectionMatrix,
+            wallInfo.uniformLocations.projectionMatrix,
             false,
             projectionMatrix);
         gl.uniformMatrix4fv(
-            programInfo.uniformLocations.modelViewMatrix,
+            wallInfo.uniformLocations.modelViewMatrix,
             false,
             modelViewMatrix);
 
