@@ -4,6 +4,11 @@
     <meta charset="utf-8">
     <title>WebGL Demo</title>
     <link rel="stylesheet" href="../webgl.css" type="text/css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.99.0/css/materialize.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.99.0/js/materialize.min.js"></script>
     <script>
       //
       // Initialize a texture and load an image.
@@ -59,11 +64,74 @@
         return (value & (value - 1)) == 0;
       }
     </script>
+    <style type="text/css">
+      html{ 
+        overflow-y: hidden;
+        overflow-x: hidden;
+      }
+      body{
+        background-color: #000000;
+      }
+      h1{
+        color: #FFFFFF;
+        font-family:sans-serif;
+        font-size: ;
+      }
+
+      .container{
+        width: 100%
+      }
+
+      .card-content{
+        color:white;
+      }
+
+      #main_div{
+        width: 100%;
+        float: left;
+        max-width: 100%
+      }
+    </style>
   </head>
 
   <body>
-    <canvas id="glcanvas" width="1280" height="720"></canvas>
+    <div id="main_div" class="container">    
+      <div class="row">
+        <div class="white-text black col s3 card">
+            <br>
+            <br>
+            <br>
+            <br>
+            <h4 align="center" id="score_value">Score:</h4>
+            <br>
+            <br>
+            <br>
+            <h4 align="center"><u>Controls</u></h4>
+            <ul style="font-size:30px">
+              <li>
+                <pre> Left: Left Arrow key</pre>
+              </li>
+              <li>
+                <pre> Right: Right Arrow</pre>
+              </li>
+              <li>
+                <pre> Jump: Up Arrow key</pre>
+              </li>
+              <li>
+                <pre> Grayscale : g </pre>
+              </li>
+            </ul>
+        </div>
+
+          
+        <div class="col s6 ">
+          <canvas id="glcanvas" width="1200" height="800"></canvas>
+        </div>
+        
+      </div>
+    </div>  
   </body>
+
   <script src="./gl-matrix.js"></script>
 
   <script src="./cube.js"></script>

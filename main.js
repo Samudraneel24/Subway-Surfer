@@ -79,6 +79,7 @@ var num_coin = 0;
 var tripped_count = 550;
 var bootcounter = 0;
 var flycounter = 0;
+var score_show;
 function detect_collision(a, b) {
     return (Math.abs(a.x - b.x) * 2 < (a.Width + b.Width)) &&
            (Math.abs(a.y - b.y) * 2 < (a.Height + b.Height)) &&
@@ -155,8 +156,8 @@ function main() {
   canvas = document.querySelector('#glcanvas');
   gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-  // c1 = new Track(gl, [-1, 0, 0]);
-  // c2 = new Track(gl, [1, 0, 0]);
+  score_show = document.getElementById('score_value');  
+
   floorarr = []
   wallarr = []
   trainarrLeft = []
@@ -208,7 +209,7 @@ function main() {
 
   // Draw the scene repeatedly
   function render(now) {
-    // console.log(counter, jet_arr.length);
+    score_show.innerHTML = "Score:" + 10*num_coin;
     if(counter % 20 == 0){
       wall_option = 1 - wall_option;
       shader_update();
