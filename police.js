@@ -13,20 +13,20 @@ let Police = class {
       let scale = 1.3;
       this.scale = scale;
 
-      this.Body = new Cube(gl, [pos[0], pos[1] + scale*0.15, pos[2]], scale*0.15, scale*0.15, scale*0.15, 0);
+      this.Body = new Cube(gl, [pos[0], pos[1] + scale*0.15, pos[2]], scale*0.15, scale*0.15, scale*0.075, 0);
       this.Face = new Cube(gl, [pos[0], pos[1] + scale*0.375, pos[2]], scale*0.075, scale*0.075, scale*0.075, 0);
       this.hair = new Cube(gl, [pos[0], pos[1] + scale*0.475, pos[2]], scale*0.075, scale*0.025, scale*0.075, 0);
       this.left_leg = new Cube(gl, [pos[0] + scale*0.075, pos[1] - scale*0.2, pos[2]], scale*0.075, scale*0.2, scale*0.075, 15);
       this.right_leg = new Cube(gl, [pos[0] - scale*0.075, pos[1] - scale*0.2, pos[2]], scale*0.075, scale*0.2, scale*0.075, -15);
       this.left_shoe = new Cube(gl, [pos[0] + scale*0.075, pos[1] - scale*0.45, pos[2]], scale*0.075, scale*0.05, scale*0.075, 15);
       this.right_shoe = new Cube(gl, [pos[0] - scale*0.075, pos[1] - scale*0.45, pos[2]], scale*0.075, scale*0.05, scale*0.075, -15);
-      this.left_sleeve = new Cube(gl, [pos[0] + scale*0.2, pos[1] + scale*0.25, pos[2]], scale*0.05, scale*0.05, scale*0.15, 15);
-      this.right_sleeve = new Cube(gl, [pos[0] - scale*0.2, pos[1] + scale*0.25, pos[2]], scale*0.05, scale*0.05, scale*0.15, -15);
-      this.left_hand = new Cube(gl, [pos[0] + scale*0.2, pos[1] + scale*0.075, pos[2]], scale*0.05, scale*0.125, scale*0.15, 15);
-      this.right_hand = new Cube(gl, [pos[0] - scale*0.2, pos[1] + scale*0.075, pos[2]], scale*0.05, scale*0.125, scale*0.15, -15);
+      this.left_sleeve = new Cube(gl, [pos[0] + scale*0.2, pos[1] + scale*0.25, pos[2]], scale*0.05, scale*0.05, scale*0.075, 15);
+      this.right_sleeve = new Cube(gl, [pos[0] - scale*0.2, pos[1] + scale*0.25, pos[2]], scale*0.05, scale*0.05, scale*0.075, -15);
+      this.left_hand = new Cube(gl, [pos[0] + scale*0.2, pos[1] + scale*0.075, pos[2]], scale*0.05, scale*0.125, scale*0.075, 15);
+      this.right_hand = new Cube(gl, [pos[0] - scale*0.2, pos[1] + scale*0.075, pos[2]], scale*0.05, scale*0.125, scale*0.075, -15);
       this.texture_skin = loadTexture(gl, "skin.png");
       this.texture_black = loadTexture(gl, "black.jpg");
-      this.texture_blue = loadTexture(gl, "dark_blue.jpg");
+      this.texture_violet = loadTexture(gl, "violet.jpg");
       this.texture_lm10 = loadTexture(gl, "lm10.jpg");
       this.texture_white = loadTexture(gl, "white.jpeg");
     }
@@ -80,12 +80,12 @@ let Police = class {
       this.Body.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_lm10);
       this.Face.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_black);
       this.hair.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_black);
-      this.left_leg.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_blue);
-      this.right_leg.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_blue);
+      this.left_leg.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_violet);
+      this.right_leg.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_violet);
       this.left_shoe.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_white);
       this.right_shoe.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_white);
-      this.left_sleeve.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_dark_blue);
-      this.right_sleeve.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_dark_blue);
+      this.left_sleeve.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_dark_violet);
+      this.right_sleeve.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_dark_violet);
       this.left_hand.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_skin);
       this.right_hand.drawCube(gl, projectionMatrix, programInfo, deltaTime, this.texture_skin);
     }

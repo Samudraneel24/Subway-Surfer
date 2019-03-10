@@ -75,11 +75,14 @@ var grayscale = 0;
 var color_R, color_G, color_B;
 var color_op = 1.0;
 var Pl;
+var Dg;
 var num_coin = 0;
 var tripped_count = 550;
 var bootcounter = 0;
 var flycounter = 0;
 var score_show;
+var duckCounter = 0;
+var player_Y = 0;
 function detect_collision(a, b) {
     return (Math.abs(a.x - b.x) * 2 < (a.Width + b.Width)) &&
            (Math.abs(a.y - b.y) * 2 < (a.Height + b.Height)) &&
@@ -143,6 +146,14 @@ Mousetrap.bind('g', function() {
 Mousetrap.bind('right', function() { temp[0] = -1; });
 Mousetrap.bind('left', function() { temp[0] = 1; });
 Mousetrap.bind('up', function(){Pl.jump(), Pol.jump()});
+Mousetrap.bind('down', function(){
+  duckCounter = 0;
+  if(Pl.isDuck == 0){
+    player_Y = Pl.pos[1];
+    Pl.pos[1] -= 0.1;
+  }
+  Pl.isDuck = 1;
+});
 
 main();
 
@@ -168,8 +179,10 @@ function main() {
   obstaclearrUp = []
   boot_arr = []
   jet_arr = []
+  Fin = []
   Pl = new Player(gl, [1, 1.5, 0]);
   Pol = new Police(gl, [1, 1.5, -3]);
+  Dg = new Dog(gl, [0, 1.5, -3]);
   // If we don't have a GL context, give up now
 
   if (!gl) {
@@ -187,6 +200,7 @@ function main() {
   texture[5] = loadTexture(gl, "skin.png");
   texture[6] = loadTexture(gl, "boot2.jpg");
   texture[7] = loadTexture(gl, "Jetpack3.jpg");
+  texture[8] = loadTexture(gl, "finish.jpg");
 
   shader_update();
 
@@ -210,28 +224,48 @@ function main() {
   // Draw the scene repeatedly
   function render(now) {
     score_show.innerHTML = "Score:" + 10*num_coin;
+    if(counter == 7200){
+    	Fin[0] = new Finish(gl, [0, 1.5, 40]);
+    }
+    if(Fin.length > 0){
+    	Fin[0].pos[2] -= curSpeed;
+    	if(Pl.pos[2] + 0.1 > Fin[0].pos[2]){
+    		alert("You have reached the end!! Start Again ?");
+	        location.reload(); 
+	        return;
+    	}
+    }
     if(counter % 20 == 0){
       wall_option = 1 - wall_option;
       shader_update();
     }
+
+    if(duckCounter == 50){
+      Pl.pos[1] = player_Y;
+      Pl.isDuck = 0;
+    }
     if(counter % 10 == 0){
       Pl.rot_x = -Pl.rot_x;
       Pol.rot_x = -Pol.rot_x;
+      Dg.rot_x = -Dg.rot_x;
     }
 
     Pol.pos[1] = Pl.pos[1];
+    Dg.pos[2] = Pol.pos[2];
     // console.log(num_coin);
     // shaderProgram = initShaderProgram(gl, vsSource, fsSource);
     counter++;
     tripped_count++;
     bootcounter++;
     flycounter++;
+    duckCounter++;
     now *= 0.001;  // convert to seconds
     const deltaTime = now - then;
     then = now;
 
     Pl.tick(temp[0]);
     Pol.tick(temp[0]);
+    Dg.tick(0);
 
     playerBound = {
       x : Pl.pos[0] - 0.35,
@@ -359,7 +393,7 @@ function main() {
         Length : 0.05,
       }
       if(detect_collision(obstacleBound, playerBound)){
-        if(tripped_count < 500){
+        if(tripped_count < 500 && tripped_count > 10){
           alert("GameOver!! Start Again ?");
           location.reload(); 
           return;
@@ -380,7 +414,7 @@ function main() {
         Height : 1.6,
         Length : 0.05,
       }
-      if(detect_collision(obstacleBound, playerBound)){
+      if(Pl.isDuck == 0 && detect_collision(obstacleBound, playerBound)){
           alert("GameOver!! Start Again ?");
           location.reload(); 
           return;
@@ -619,6 +653,9 @@ function drawScene(gl, wallInfo, programInfo, deltaTime, texture) {
 
     Pl.drawPlayer(gl, viewProjectionMatrix, programInfo, deltaTime);
     Pol.drawPolice(gl, viewProjectionMatrix, programInfo, deltaTime);
+    Dg.drawDog(gl, viewProjectionMatrix, programInfo, deltaTime);
+    if(Fin.length > 0)
+    	Fin[0].drawFinish(gl, viewProjectionMatrix, programInfo, deltaTime, texture[8]);
 
 }
 
